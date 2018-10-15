@@ -16,4 +16,4 @@ list first, but that would slow down the workflow considerably.
 - [The dataset runner script](./run)
 
 ## Specific datasets
-- [Wikipedia full history](wikipedia-history)
+- [Wikipedia full history](wikipedia_history)

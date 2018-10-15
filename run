@@ -10,8 +10,31 @@ set +euo pipefail
 original_pwd=$PWD
 cd "$(dirname "$0")"
 
+# Configuration variables (see ./run config)
+: ${ACADEMICTORRENTS_DATA:=/tmp}
+: ${ACADEMICTORRENTS_TMP:=/tmp}
+: ${ACADEMICTORRENTS_MEMORY_LIMIT_GB:=128}
+
+mb_free_in() { df -m "$1" | tail -n1 | awk '{print $4}'; }
+
+
 # Always run ni from inside the docker.
 ni() { docker run --rm spencertipping/academictorrents ni "$@"; }
+
+# Run a dataset process. These are scripts inside dataset directories.
+process() {
+  local dataset=$1
+  local scriptname=$2
+  shift 2
+
+  docker run --rm \
+    -v "$ACADEMICTORRENTS_DATA/$dataset:/data" \
+    -v "$ACADEMICTORRENTS_TMP/$dataset:/tmp" \
+    -v "$dataset:/process:ro" \
+    -m ${ACADEMICTORRENTS_MEMORY_LIMIT_GB}g \
+    spencertipping/academictorrents \
+    "/process/$scriptname" "$@"
+}
 
 
 # Dataset age checking
@@ -19,7 +42,7 @@ ni() { docker run --rm spencertipping/academictorrents ni "$@"; }
 # these arguments to specify which revision you want to build, and output
 # directories also take these names.
 
-strm1_latest() { echo original; }
+srtm1_latest() { echo original; }
 
 osm_planet_latest() {
   ni https://planet.openstreetmap.org/planet/ \
@@ -27,10 +50,24 @@ osm_planet_latest() {
 }
 
 wikipedia_history_latest() {
-  ni https://dumps.wikimedia.org/enwiki/ p'/href="([^"\/]+)\/?"/' r+2r1
+  ni https://dumps.wikimedia.org/enwiki/ \
+     p'/href="([^"\/]+)\/?"/' rp'!/latest/' r+1
 }
 
 wikipedia_pages_latest() { wikipedia_history_latest; }
+
+
+# Download functions
+# Download data from original sources. These functions don't assemble torrent
+# files; that's done afterwards.
+
+srtm1_download() { echo TODO; }
+
+osm_planet_download() { process osm_planet download "$@"; }
+
+wikipedia_history_download() {
+  :
+}
 
 
 # Dataset function delegates
@@ -48,17 +85,30 @@ defdataset() {
 }
 
 
-defdataset strm1
+defdataset srtm1
 defdataset osm_planet
 defdataset wikipedia_history
 defdataset wikipedia_pages
 
 
-# Repository configuration
-: ${ACADEMICTORRENTS_DATA:=/tmp}
-: ${ACADEMICTORRENTS_TMP:=/tmp}
+# Data repository management
+# Functions to manage locally-stored data and keep track of which steps we've
+# run.
 
-mb_free_in() { df -m "$1" | tail -n1 | awk '{print $4}'; }
+repository_ls() {
+  # Look for defined datasets, and for each one list out known revisions.
+  for d in "${datasets[@]}"; do
+    echo -n "$ACADEMICTORRENTS_DATA/$d"
+    if [[ -d "$ACADEMICTORRENTS_DATA/$d" ]]; then
+      echo
+      for r in $(ls $ACADEMICTORRENTS_DATA/$d); do
+        echo "  revision $r"
+      done
+    else
+      echo " (missing)"
+    fi
+  done
+}
 
 
 # Main argument processing
@@ -69,15 +119,22 @@ case $cmd in
     data_free_gb=$(( $(mb_free_in "$ACADEMICTORRENTS_DATA") / 1024 ))
     tmp_free_gb=$((  $(mb_free_in "$ACADEMICTORRENTS_TMP")  / 1024 ))
 
-    echo "ACADEMICTORRENTS_DATA = $ACADEMICTORRENTS_DATA [$data_free_gb GiB free]"
-    echo "ACADEMICTORRENTS_TMP  = $ACADEMICTORRENTS_TMP [$tmp_free_gb GiB free]"
+    echo "ACADEMICTORRENTS_DATA            = $ACADEMICTORRENTS_DATA [$data_free_gb GiB free]"
+    echo "ACADEMICTORRENTS_TMP             = $ACADEMICTORRENTS_TMP [$tmp_free_gb GiB free]"
+    echo "ACADEMICTORRENTS_MEMORY_LIMIT_GB = $ACADEMICTORRENTS_MEMORY_LIMIT_GB"
 
     if [[ "$ACADEMICTORRENTS_DATA" == /tmp ]]; then
       echo
       echo "You don't have a data repository configured yet, so we're using /tmp."
-      echo "To set one up:"
-      echo "  $ mkdir -p /path/to/data"
-      echo "  $ export ACADEMICTORRENTS_DATA=/path/to/data"
+      echo "To create one:"
+      echo
+      echo "$ mkdir -p /path/to/data"
+      echo "$ export ACADEMICTORRENTS_DATA=/path/to/data"
+      echo
+      echo "Datasets you generate will be stored in subdirectories there:"
+      echo
+      echo "/path/to/data/[dataset_name]/[dataset_revision]/..."
+      echo "/path/to/data/[dataset_name]/[dataset_revision].torrent"
       echo
     fi
     ;;
@@ -112,6 +169,10 @@ case $cmd in
     for d in "${datasets[@]}"; do
       echo -e "$d\t$($d latest)"
     done
+    ;;
+
+  ls)
+    repository_ls "$@"
     ;;
 
   *)
