@@ -1,0 +1,6 @@
+#!/bin/bash
+# Builds and, if you're me, uploads to dockerhub.
+
+docker build -t spencertipping/academictorrents .
+
+[[ $USER == spencertipping ]] && docker push spencertipping/academictorrents || :
