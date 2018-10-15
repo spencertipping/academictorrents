@@ -1,0 +1,9 @@
+#!/bin/bash
+# Downloads wikipedia full history directly into /data. We keep the original 7z
+# archives because they are already efficiently compressed.
+
+cd /data
+ni https://dumps.wikimedia.org/enwiki/latest/ \
+   p'/href="([^"]+\.7z)"/g' \
+   p'"https://dumps.wikimedia.org/enwiki/latest/$_"' \
+ | xargs wget -c

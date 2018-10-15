@@ -1,0 +1,4 @@
+#!/bin/bash
+# Runs a shell inside the data build docker image.
+
+docker run --rm -it spencertipping/academictorrents /bin/bash

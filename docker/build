@@ -1,6 +1,8 @@
 #!/bin/bash
 # Builds and, if you're me, uploads to dockerhub.
 
+cd "$(dirname "$0")"
+
 docker build -t spencertipping/academictorrents .
 
 [[ $USER == spencertipping ]] && docker push spencertipping/academictorrents || :
