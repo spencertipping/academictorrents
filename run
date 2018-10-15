@@ -26,7 +26,7 @@ strm1_latest() { echo original; }
 
 osm_planet_latest() {
   ni https://planet.openstreetmap.org/planet/ \
-     r/planet-latest/ p'join"", /20(..)-(..)-(..)/' r1
+     r/planet-latest/ p'join"", /(20..)-(..)-(..)/' r1
 }
 
 wikipedia_history_latest() {
@@ -42,7 +42,7 @@ wikipedia_pages_latest() { wikipedia_history_latest; }
 
 declare -a datasets
 defdataset() {
-  dataset+=( "$1" )
+  datasets+=( "$1" )
   eval "$1() {
     method=\$1
     shift
@@ -58,22 +58,27 @@ defdataset wikipedia_pages
 
 
 # Main argument processing
-dataset_pattern="$(IFS="|"; echo "${datasets[@]}")"
-
 cmd=$1
 shift
 case $cmd in
   docker) docker_commands "$@" ;;
 
   datasets)
-    IFS=$'\n- '
     echo "available datasets:"
-    echo "${datasets[@]}"
+    for d in "${datasets[@]}"; do
+      echo "- $d"
+    done | sort
     echo
     ;;
 
-  $dataset_pattern) "$cmd" "$@" ;;
   *)
+    for d in "${datasets[@]}"; do
+      if [[ "$cmd" == "$d" ]]; then
+        "$cmd" "$@"
+        exit $?
+      fi
+    done
+
     echo "usage: $0 command [args...]"
     echo ""
     echo "available commands:"
@@ -81,5 +86,6 @@ case $cmd in
     echo "- docker pull"
     echo "- datasets"
     echo "- [dataset_name] ..."
+    echo
     ;;
 esac
