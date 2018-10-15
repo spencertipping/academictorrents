@@ -4,6 +4,8 @@ Torrents](https://academictorrents.com). This repository contains all of the
 source code for those processes. Everything is run through Docker, so you should
 be able to reproduce everything here.
 
+**WIP:** none of this will work yet.
+
 ## What you'll need to run this
 A lot of disk space: you need about 2TB free to create the larger datasets.
 
