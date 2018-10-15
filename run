@@ -54,10 +54,34 @@ defdataset wikipedia_history
 defdataset wikipedia_pages
 
 
+# Repository configuration
+: ${ACADEMICTORRENTS_DATA:=/tmp}
+: ${ACADEMICTORRENTS_TMP:=/tmp}
+
+mb_free_in() { df -m "$1" | tail -n1 | awk '{print $4}'; }
+
+
 # Main argument processing
 cmd=$1
 shift
 case $cmd in
+  config)
+    data_free_gb=$(( $(mb_free_in "$ACADEMICTORRENTS_DATA") / 1024 ))
+    tmp_free_gb=$((  $(mb_free_in "$ACADEMICTORRENTS_TMP")  / 1024 ))
+
+    echo "ACADEMICTORRENTS_DATA = $ACADEMICTORRENTS_DATA [$data_free_gb GiB free]"
+    echo "ACADEMICTORRENTS_TMP  = $ACADEMICTORRENTS_TMP [$tmp_free_gb GiB free]"
+
+    if [[ "$ACADEMICTORRENTS_DATA" == /tmp ]]; then
+      echo
+      echo "You don't have a data repository configured yet, so we're using /tmp."
+      echo "To set one up:"
+      echo "  $ mkdir -p /path/to/data"
+      echo "  $ export ACADEMICTORRENTS_DATA=/path/to/data"
+      echo
+    fi
+    ;;
+
   docker)
     cmd=$1
     shift
@@ -101,9 +125,11 @@ case $cmd in
     echo "usage: $0 command [args...]"
     echo ""
     echo "available commands:"
-    echo "- docker ..."
-    echo "- datasets"
-    echo "- [dataset_name] ..."
+    echo "  config                  show configuration variables"
+    echo "  docker ...              commands related to docker image"
+    echo "  datasets                list datasets"
+    echo "  [dataset_name] ...      manipulate one dataset"
+    echo "  latest                  get latest version of each dataset"
     echo
     exit 1
     ;;
