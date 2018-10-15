@@ -10,9 +10,6 @@ set +euo pipefail
 original_pwd=$PWD
 cd "$(dirname "$0")"
 
-docker_build() { docker/build; }
-docker_pull()  { docker pull spencertipping/academictorrents; }
-
 # Always run ni from inside the docker.
 ni() { docker run --rm spencertipping/academictorrents ni "$@"; }
 
@@ -65,12 +62,17 @@ case $cmd in
     cmd=$1
     shift
     case $cmd in
-      build) docker_build "$@" ;;
-      pull)  docker_pull  "$@" ;;
+      build) docker/build ;;
+      pull)  docker pull spencertipping/academictorrents ;;
+      shell) docker run --rm -v "$original_pwd:/process" \
+                    -it spencertipping/academictorrents \
+                          sh -c 'cd /process; exec /bin/bash' ;;
+
       *)
         echo "usage:"
         echo "  $0 docker build"
         echo "  $0 docker pull"
+        echo "  $0 docker shell"
         echo
         exit 1
         ;;
@@ -78,11 +80,14 @@ case $cmd in
     ;;
 
   datasets)
-    echo "available datasets:"
+    IFS=$'\n'
+    echo "${datasets[*]}" | sort
+    ;;
+
+  latest)
     for d in "${datasets[@]}"; do
-      echo "- $d"
-    done | sort
-    echo
+      echo -e "$d\t$($d latest)"
+    done
     ;;
 
   *)
@@ -96,8 +101,7 @@ case $cmd in
     echo "usage: $0 command [args...]"
     echo ""
     echo "available commands:"
-    echo "- docker build"
-    echo "- docker pull"
+    echo "- docker ..."
     echo "- datasets"
     echo "- [dataset_name] ..."
     echo

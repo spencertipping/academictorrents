@@ -13,7 +13,6 @@ list first, but that would slow down the workflow considerably.
 
 ## What's here
 - [The docker image that runs everything](docker)
-- [Run a shell inside the docker image](./shell)
 - [The dataset runner script](./run)
 
 ## Specific datasets
