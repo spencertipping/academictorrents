@@ -36,6 +36,54 @@ process() {
     "/process/$scriptname" "$@"
 }
 
+make_torrent() {
+  local dataset=$1
+  local revision=$2
+  if [[ -z "$revision" ]]; then
+    echo "must specify a revision to make a torrent for"
+    return 1
+  fi
+
+  docker run --rm spencertipping/academictorrents \
+    -v "$ACADEMICTORRENTS_DATA/$dataset:/data" \
+    spencertipping/academictorrents \
+    sh -c "
+      cd /data;
+      btmakemetafile '$revision' http://academictorrents.com/announce.php"
+}
+
+
+# Dataset function delegates
+# Specify the list of datasets we have available. Then we can build full version
+# lists and manage multi-dataset processing.
+
+declare -a datasets
+defdataset() {
+  local d=$1
+
+  datasets+=( "$d" )
+  eval "$d() {
+    method=\$1
+    shift
+    ${d}_\$method \"\$@\"
+  }"
+
+  # Default method implementations
+  eval "${d}_torrent() {
+    make_torrent \"$d\" \"\$1\"
+  }"
+
+  eval "${d}_ls() {
+    ls \"$ACADEMICTORRENTS_DATA/${d}\"
+  }"
+}
+
+
+defdataset srtm1
+defdataset osm_planet
+defdataset wikipedia_history
+defdataset wikipedia_pages
+
 
 # Dataset age checking
 # Functions that return the latest revision of any given dataset. You'll use
@@ -68,27 +116,6 @@ osm_planet_download() { process osm_planet download "$@"; }
 wikipedia_history_download() {
   :
 }
-
-
-# Dataset function delegates
-# Specify the list of datasets we have available. Then we can build full version
-# lists and manage multi-dataset processing.
-
-declare -a datasets
-defdataset() {
-  datasets+=( "$1" )
-  eval "$1() {
-    method=\$1
-    shift
-    ${1}_\$method \"\$@\"
-  }"
-}
-
-
-defdataset srtm1
-defdataset osm_planet
-defdataset wikipedia_history
-defdataset wikipedia_pages
 
 
 # Data repository management
