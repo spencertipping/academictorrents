@@ -2,8 +2,17 @@
 # Downloads wikipedia full history directly into /data. We keep the original 7z
 # archives because they are already efficiently compressed.
 
-cd /data
-ni https://dumps.wikimedia.org/enwiki/latest/ \
+revision=$1
+
+if [[ -z "$revision" ]]; then
+  echo "usage: $0 revision"
+  exit 1
+fi
+
+mkdir -p /data/$revision
+cd /data/$revision
+
+ni https://dumps.wikimedia.org/enwiki/$revision/ \
    p'/href="([^"]+\.7z)"/g' \
-   p'"https://dumps.wikimedia.org/enwiki/latest/$_"' \
+   p'"https://dumps.wikimedia.org/enwiki/'$revision'/$_"' \
  | xargs wget -c
