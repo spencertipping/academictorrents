@@ -7,6 +7,7 @@ RUN apt-get update \
 
 ADD ni /usr/bin/
 
+VOLUME /process
 VOLUME /data
 VOLUME /tmp
 

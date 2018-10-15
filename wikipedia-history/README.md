@@ -10,7 +10,8 @@ Purely downloading; no reprocessing is happening here.
   [https://dumps.wikimedia.org/enwiki/](https://dumps.wikimedia.org/enwiki/).
 
 ## Outputs
-- `/data/wikipedia-history-$revision
+- `/data/wikipedia-history-$revision`
+- `/data/wikipedia-history-$revision.torrent`
 
 ## Download details
 History files are provided in multiple formats; I'm going to use 7zip here

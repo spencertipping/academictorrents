@@ -61,7 +61,21 @@ defdataset wikipedia_pages
 cmd=$1
 shift
 case $cmd in
-  docker) docker_commands "$@" ;;
+  docker)
+    cmd=$1
+    shift
+    case $cmd in
+      build) docker_build "$@" ;;
+      pull)  docker_pull  "$@" ;;
+      *)
+        echo "usage:"
+        echo "  $0 docker build"
+        echo "  $0 docker pull"
+        echo
+        exit 1
+        ;;
+    esac
+    ;;
 
   datasets)
     echo "available datasets:"
@@ -87,5 +101,6 @@ case $cmd in
     echo "- datasets"
     echo "- [dataset_name] ..."
     echo
+    exit 1
     ;;
 esac
